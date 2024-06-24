@@ -1,0 +1,78 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "email-service-nicegui"
+dynamic = ["version"]
+description = 'An out of process e-mail service module using Redis/Dragonfly for nicegui [python]'
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+keywords = []
+authors = [
+  { name = "swk", email = "swk@swkemb.com" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+  "confz", "redis[hiredis]", "nicegui", "picologging"
+]
+
+[project.urls]
+Documentation = "https://github.com/NIDRIVEProjects/email-service#readme"
+Issues = "https://github.com/NIDRIVEProjects/email-service/issues"
+Source = "https://github.com/NIDRIVEProjects/email-service"
+
+[tool.hatch.version]
+path = "src/email_service_nicegui/__about__.py"
+
+[tool.hatch.envs.types]
+extra-dependencies = [
+  "mypy>=1.0.0",
+]
+[tool.hatch.envs.types.scripts]
+check = "mypy --install-types --non-interactive {args:src/email_service_nicegui tests}"
+
+[tool.coverage.run]
+source_pkgs = ["email_service_nicegui", "tests"]
+branch = true
+parallel = true
+omit = [
+  "src/email_service_nicegui/__about__.py",
+]
+
+[tool.coverage.paths]
+email_service_nicegui = ["src/email_service_nicegui", "*/email-service/src/email_service_nicegui"]
+tests = ["tests", "*/email-service/tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
+
+[tool.pylint.messages_control]
+disable = [
+  "missing-module-docstring",
+  "missing-class-docstring",
+  "missing-function-docstring",
+  "line-too-long",
+  "multiple-statements",
+  "fixme",
+  "broad-exception-caught",
+]
+
+[tool.isort]
+profile = "black"
+
+[tool.black]
+line-length = 120
+target-version = ["py311", "py312"]
