@@ -12,7 +12,7 @@
 
 An out of process e-mail service module using Redis/Dragonfly for nicegui [python]
 
-![eMail service module architecture](docs\architecture.png)
+![eMail service module architecture](docs/architecture.png)
 
 Runs SMTP based eMail delivery service in a separate process, ensuring nicegui UI loop is not blocked.
 
