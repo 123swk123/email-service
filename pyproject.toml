@@ -7,7 +7,7 @@ name = "email-service-nicegui"
 dynamic = ["version"]
 description = 'An out of process e-mail service module using Redis/Dragonfly for nicegui [python]'
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = "MIT"
 keywords = []
 authors = [
@@ -16,6 +16,7 @@ authors = [
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
+  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: Implementation :: CPython",
@@ -75,4 +76,4 @@ profile = "black"
 
 [tool.black]
 line-length = 120
-target-version = ["py311", "py312"]
+target-version = ["py310", "py311", "py312"]
