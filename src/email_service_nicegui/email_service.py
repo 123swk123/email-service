@@ -189,32 +189,28 @@ class SrvcEmail():
         if hasattr(self, 'm_subscription.aclose'):
             await self.m_subscription.aclose()
 
-    def entry(self, que: queue.Queue):
-        SrvcEmail.logger = utils_get_logger(
-            self.__class__.__name__,
-            que, fmt='%(levelname)s:%(process)d => %(message)s')
+    def entry(self, que: queue.Queue, log_level:int = logging.DEBUG):
+        SrvcEmail.logger = utils_get_logger(self.__class__.__name__, que, log_level, '%(levelname)s:%(name)s:%(process)d => %(message)s')
 
         try:
             self._m_config = ConfigSMTP(config_sources=EnvSource(allow_all=True, prefix='SMTP_'))
-            if self._m_config.debug: self.logger.setLevel(logging.DEBUG)
             self.m_subscription = Redis(host=self._m_memdb_host).pubsub()
-            self.m_smtp = smtplib.SMTP(self._m_config.host, self._m_config.port, local_hostname='my-test-server.local.lan')
+            self.m_smtp = smtplib.SMTP(self._m_config.host, self._m_config.port, timeout=30)
             self.m_smtp.set_debuglevel(1 if self._m_config.debug else 0)
             self.logger.debug('self %r', self)
             if self._m_config.starttls:
                 self.m_smtp.starttls()
             rslt = self.m_smtp.login(self._m_config.username, self._m_config.password)
-            self.logger.debug('login: %s', rslt)
-
+            self.logger.info('login: %s', rslt)
 
             asyncio.run(self._do_work())
         except ValidationError as excp:
             # catch missing or invalid environment variables
             for error in excp.errors():
                 if error["type"] == 'missing':
-                    self.logger.critical('SMTP_{str(error["loc"][0]).upper()} environment variable not found.')
+                    self.logger.critical('%s environment variable not found.', str(error["loc"][0]).upper())
                 else:
-                    self.logger.critical('SMTP_{str(error["loc"][0]).upper()} = {error["input"]} => {error["msg"]}')
+                    self.logger.critical('you have set %s="%s" but %s', str(error["loc"][0]).upper(), error["input"], error["msg"])
             self.logger.critical('eMail service is not available! fix the environment variables and restart the service.')
         except smtplib.SMTPAuthenticationError as excp:
             self.logger.info('SMTP Error Details: %r', excp)
@@ -224,10 +220,14 @@ class SrvcEmail():
             self.logger.info('SMTP Error Details: %r', excp)
             self.logger.critical('Unable to connect to SMTP server, please check SMTP server details and network connection')
             self.logger.critical('eMail service is not available! fix the SMTP server details and restart the service.')
+        except TimeoutError as excp:
+            self.logger.info('SMTP Error Details: %r', excp)
+            self.logger.critical('SMTP server connection timed out, please check SMTP server details and network connection')
+            self.logger.critical('eMail service is not available! fix the SMTP server details (or) network and restart the service.')
         except Exception as excp:
             self.logger.exception(repr(excp))
         finally:
-            self.logger.debug('entry, finally')
+            self.logger.info('Closing SMTP session')
             asyncio.run(self.do_force_closure())
             # in case if we skipped _do_work due to critical failures then the interrupt & termination signal handlers
             # are mapped to sys.exit(0) which will terminate the process.
@@ -235,21 +235,21 @@ class SrvcEmail():
             signal.signal(signal.SIGTERM, lambda _s, _f: sys.exit(0))
 
     @staticmethod
-    async def run():
+    async def run(log_level:int = logging.DEBUG):
         global log_listener # pylint: disable=global-statement
 
         _que = multiprocessing.Manager().Queue(-1) # unlimited size
         log_listener = IQueueListener(_que, logging.StreamHandler(), respect_handler_level=True)
         log_listener.start()
         srvmail_logger = utils_get_logger(
-            'main',
-            level=logging.DEBUG,
+            __name__,
+            level=log_level,
             fmt='%(levelname)s:%(process)d:%(name)s:%(funcName)s, line %(lineno)d => %(message)s')
         try:
             assert len(SrvcEmail.self_objects.values()) > 0, 'No email service object found'
 
             for obj in SrvcEmail.self_objects.values():
-                mail_process_tasks.append(asyncio.create_task(run.cpu_bound(obj.entry, _que)))
+                mail_process_tasks.append(asyncio.create_task(run.cpu_bound(obj.entry, _que, log_level)))
 
             srvmail_logger.debug('mail_process_tasks: {mail_process_tasks}')
             # await asyncio.wait(mail_process_tasks, timeout=1, return_when=asyncio.FIRST_EXCEPTION)
@@ -265,7 +265,7 @@ class SrvcEmail():
     async def stop():
         global log_listener # pylint: disable=global-variable-not-assigned
 
-        srvmail_logger = utils_get_logger('main')
+        srvmail_logger = utils_get_logger(__name__)
         try:
             for obj in SrvcEmail.self_objects.values():
                 await obj.do_force_closure()

@@ -4,8 +4,10 @@
 
 import queue
 from typing import Optional
+
 import picologging as logging
 from picologging.handlers import QueueHandler, QueueListener
+
 # or
 # import logging
 # from logging.handlers import QueueHandler, QueueListener
