@@ -90,7 +90,8 @@ class SrvcEmail():
             else:
                 self.logger.warning('No eMail handler found for channel: %s', message['channel'])
         except smtplib.SMTPSenderRefused as excp:
-            if excp.smtp_code == 530:
+            if excp.smtp_code >= 500 and excp.smtp_code <= 599:
+                if self._m_config.starttls: self.m_smtp.starttls()
                 rslt = self.m_smtp.login(self._m_config.username, self._m_config.password)
                 self.logger.debug('Re-trying authentication: %s', rslt)
                 republish(0)
@@ -128,10 +129,13 @@ class SrvcEmail():
 
     def _reconnect_smtp(self):
         try:
-            # self._terminate_smtp()
+            try:
+                self._terminate_smtp()
+            except Exception:
+                pass
             rslt = self.m_smtp.connect(self._m_config.host, self._m_config.port)
             self.logger.debug('connect: %s', rslt)
-            # self.m_smtp.starttls()
+            if self._m_config.starttls: self.m_smtp.starttls()
             rslt = self.m_smtp.login(self._m_config.username, self._m_config.password)
             self.logger.debug('authentication: %s', rslt)
         except (smtplib.SMTPAuthenticationError, smtplib.SMTPConnectError, smtplib.SMTPServerDisconnected, smtplib.SMTPResponseException) as excp:
