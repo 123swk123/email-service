@@ -129,10 +129,10 @@ class SrvcEmail():
 
     def _reconnect_smtp(self):
         try:
-            try:
-                self._terminate_smtp()
-            except Exception:
-                pass
+            # try:
+            #     self._terminate_smtp()
+            # except Exception:
+            #     pass
             rslt = self.m_smtp.connect(self._m_config.host, self._m_config.port)
             self.logger.debug('connect: %s', rslt)
             if self._m_config.starttls: self.m_smtp.starttls()
