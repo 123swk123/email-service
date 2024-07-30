@@ -36,7 +36,7 @@ Imagine we convert this each sub-category into channels by which web app will in
 ### Environment variable setup
 #### Can use .env file
 ```env
-SMTP_HOST = swk-server-2.local
+SMTP_HOST = test-server.local
 SMTP_PORT = 30025
 SMTP_STARTTLS = True
 SMTP_FROM_EMAIL = 'hello@test.com'
